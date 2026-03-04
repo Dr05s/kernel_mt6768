@@ -176,7 +176,8 @@ int udp_gro_complete(struct sk_buff *skb, int nhoff, udp_lookup_t lookup);
 void udp_v6_early_demux(struct sk_buff *skb);
 
 struct sk_buff *__udp_gso_segment(struct sk_buff *gso_skb,
-				  netdev_features_t features);
+				  netdev_features_t features,
+				  unsigned int mss, __sum16 check);
 
 static inline struct udphdr *udp_gro_udphdr(struct sk_buff *skb)
 {
@@ -282,6 +283,7 @@ void udp4_hwcsum(struct sk_buff *skb, __be32 src, __be32 dst);
 int udp_rcv(struct sk_buff *skb);
 int udp_ioctl(struct sock *sk, int cmd, unsigned long arg);
 int udp_init_sock(struct sock *sk);
+int udp_pre_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);
 int __udp_disconnect(struct sock *sk, int flags);
 int udp_disconnect(struct sock *sk, int flags);
 unsigned int udp_poll(struct file *file, struct socket *sock, poll_table *wait);
@@ -291,7 +293,7 @@ struct sk_buff *skb_udp_tunnel_segment(struct sk_buff *skb,
 int udp_lib_getsockopt(struct sock *sk, int level, int optname,
 		       char __user *optval, int __user *optlen);
 int udp_lib_setsockopt(struct sock *sk, int level, int optname,
-		       char __user *optval, unsigned int optlen,
+		       sockptr_t optval, unsigned int optlen,
 		       int (*push_pending_frames)(struct sock *));
 struct sock *udp4_lib_lookup(struct net *net, __be32 saddr, __be16 sport,
 			     __be32 daddr, __be16 dport, int dif);
@@ -436,6 +438,7 @@ struct udp_iter_state {
 	struct seq_net_private  p;
 	sa_family_t		family;
 	int			bucket;
+	struct udp_seq_afinfo	*bpf_seq_afinfo;
 	struct udp_table	*udp_table;
 };
 

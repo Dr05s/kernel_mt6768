@@ -86,6 +86,43 @@ void format(void)
 	exit(2);
 }
 
+static void display_openssl_errors(int l)
+{
+	const char *file;
+	char buf[120];
+	int e, line;
+
+	if (ERR_peek_error() == 0)
+		return;
+	fprintf(stderr, "At main.c:%d:\n", l);
+
+	while ((e = ERR_get_error_line(&file, &line))) {
+		ERR_error_string(e, buf);
+		fprintf(stderr, "- SSL %s: %s:%d\n", buf, file, line);
+	}
+}
+
+#ifndef OPENSSL_NO_ENGINE
+static void drain_openssl_errors(void)
+{
+	const char *file;
+	int line;
+
+	if (ERR_peek_error() == 0)
+		return;
+	while (ERR_get_error_line(&file, &line)) {}
+}
+#endif
+
+#define ERR(cond, fmt, ...)				\
+	do {						\
+		bool __cond = (cond);			\
+		display_openssl_errors(__LINE__);	\
+		if (__cond) {				\
+			err(1, fmt, ## __VA_ARGS__);	\
+		}					\
+	} while(0)
+
 static const char *key_pass;
 
 static int pem_pw_cb(char *buf, int len, int w, void *v)
@@ -161,21 +198,38 @@ static EVP_PKEY *read_private_key_pkcs11(const char *private_key_name)
 
 static EVP_PKEY *read_private_key(const char *private_key_name)
 {
+	EVP_PKEY *private_key;
+	BIO *b;
+
+#ifndef OPENSSL_NO_ENGINE
 	if (!strncmp(private_key_name, "pkcs11:", 7)) {
-		return read_private_key_pkcs11(private_key_name);
-	} else {
-		EVP_PKEY *private_key;
-		BIO *b;
+		ENGINE *e;
 
-		b = BIO_new_file(private_key_name, "rb");
-		ERR(!b, "%s", private_key_name);
-		private_key = PEM_read_bio_PrivateKey(b, NULL, pem_pw_cb,
-						      NULL);
+		ENGINE_load_builtin_engines();
+		drain_openssl_errors();
+		e = ENGINE_by_id("pkcs11");
+		ERR(!e, "Load PKCS#11 ENGINE");
+		if (ENGINE_init(e))
+			drain_openssl_errors();
+		else
+			ERR(1, "ENGINE_init");
+		if (key_pass)
+			ERR(!ENGINE_ctrl_cmd_string(e, "PIN", key_pass, 0),
+			    "Set PKCS#11 PIN");
+		private_key = ENGINE_load_private_key(e, private_key_name,
+						      NULL, NULL);
 		ERR(!private_key, "%s", private_key_name);
-		BIO_free(b);
-
 		return private_key;
 	}
+#endif
+
+	b = BIO_new_file(private_key_name, "rb");
+	ERR(!b, "%s", private_key_name);
+	private_key = PEM_read_bio_PrivateKey(b, NULL, pem_pw_cb,
+					      NULL);
+	ERR(!private_key, "%s", private_key_name);
+	BIO_free(b);
+	return private_key;
 }
 
 static X509 *read_x509(const char *x509_name)
