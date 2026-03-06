@@ -12,7 +12,9 @@
  *  Copyright (C) 2004 Nadia Yvette Chambers
  */
 
+#ifdef CONFIG_MTK_SCHED_TRACERS
 #define DEBUG 1
+#endif
 
 #include <linux/ring_buffer.h>
 #include <generated/utsrelease.h>
