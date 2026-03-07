@@ -4498,15 +4498,15 @@ static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp)
 	}
 }
 
-struct rt6_info *calc_lft_vzw(struct inet6_ifaddr *ifp,
+struct fib6_info *calc_lft_vzw(struct inet6_ifaddr *ifp,
 			      u32 *minimum_lft)
 {
-	struct rt6_info *rt;
+	struct fib6_info *rt;
 	u32 route_lft;
 
-	rt = rt6_get_dflt_router_expires(ifp->idev->dev);
-	if (rt && (rt->rt6i_flags & RTF_EXPIRES)) {
-		route_lft = (rt->dst.expires - ifp->tstamp) / HZ;
+	rt = rt6_get_dflt_router(dev_net(ifp->idev->dev), NULL, ifp->idev->dev);
+	if (rt && (rt->fib6_flags & RTF_EXPIRES)) {
+		route_lft = (rt->expires - ifp->tstamp) / HZ;
 		*minimum_lft = min(ifp->prefered_lft, route_lft);
 		pr_info("[mtk_net]RA: min_lft %lld\n",
 			(u64)(*minimum_lft));
@@ -4516,12 +4516,12 @@ struct rt6_info *calc_lft_vzw(struct inet6_ifaddr *ifp,
 	return rt;
 }
 
-static void calc_next_vzw(struct inet6_ifaddr *ifp, struct rt6_info *rt,
+static void calc_next_vzw(struct inet6_ifaddr *ifp, struct fib6_info *rt,
 			  unsigned long *next, unsigned long age,
 			  int is_expires, u32 minimum_lft)
 {
 	if (strncmp(ifp->idev->dev->name, "ccmni", 2) == 0) {
-		if (is_expires || (rt && (rt->rt6i_flags & RTF_EXPIRES))) {
+		if (is_expires || (rt && (rt->fib6_flags & RTF_EXPIRES))) {
 			if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
 			    age >= (minimum_lft * 3 / 4))
 				inet6_send_rs_vzw(ifp);
@@ -4559,7 +4559,7 @@ restart:
 		hlist_for_each_entry_rcu_bh(ifp, &inet6_addr_lst[i], addr_lst) {
 			unsigned long age;
 			u32 min_lft;
-			struct rt6_info *rt = NULL;
+			struct fib6_info *rt = NULL;
 
 			if (sysctl_optr == MTK_IPV6_VZW_ALL ||
 			    sysctl_optr == MTK_IPV6_EX_RS_INTERVAL)

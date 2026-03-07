@@ -143,6 +143,7 @@ static void irq_work_run_list(struct llist_head *list)
 	struct irq_work *work, *tmp;
 	struct llist_node *llnode;
 	int flags;
+	unsigned long long ts;
 
 	BUG_ON(!irqs_disabled());
 

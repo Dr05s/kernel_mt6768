@@ -116,7 +116,8 @@ static unsigned int ppm_cpi_get_cpu_cycle_count(int cpu)
 	unsigned int diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		perf_event_read_local(event, &new);
+		u64 enabled, running;
+		perf_event_read_local(event, &new, &enabled, &running);
 		if (new > old)
 			diff = (unsigned int)(new - old);
 
@@ -138,7 +139,8 @@ static unsigned int ppm_cpi_get_inst_count(int cpu)
 	unsigned int diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		perf_event_read_local(event, &new);
+		u64 enabled, running;
+		perf_event_read_local(event, &new, &enabled, &running);
 		if (new > old)
 			diff = (unsigned int)(new - old);
 
@@ -159,7 +161,8 @@ static unsigned long long ppm_cpi_get_pmu_e1_count(int cpu)
 	unsigned long long diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		perf_event_read_local(event, &new);
+		u64 enabled, running;
+		perf_event_read_local(event, &new, &enabled, &running);
 		if (new > old)
 			diff = new - old;
 
@@ -180,7 +183,8 @@ static unsigned long long ppm_cpi_get_pmu_e7_count(int cpu)
 	unsigned long long diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		perf_event_read_local(event, &new);
+		u64 enabled, running;
+		perf_event_read_local(event, &new, &enabled, &running);
 		if (new > old)
 			diff = new - old;
 
@@ -201,7 +205,8 @@ static unsigned long long ppm_cpi_get_pmu_e8_count(int cpu)
 	unsigned long long diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		perf_event_read_local(event, &new);
+		u64 enabled, running;
+		perf_event_read_local(event, &new, &enabled, &running);
 		if (new > old)
 			diff = new - old;
 
@@ -278,8 +283,11 @@ static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 #if 0
 		if (c_event) {
 			perf_event_enable(c_event);
-			perf_event_read_local(c_event,
-					      &per_cpu(cpu_cycle_count, cpu));
+			{
+				u64 enabled, running;
+				perf_event_read_local(c_event,
+					      &per_cpu(cpu_cycle_count, cpu), &enabled, &running);
+			}
 		}
 #else
 		smp_call_function_single(cpu, ppm_cpi_enable_cycle_cnt,
@@ -287,8 +295,11 @@ static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 #endif
 		if (i_event) {
 			perf_event_enable(i_event);
-			perf_event_read_local(i_event,
-					      &per_cpu(inst_count, cpu));
+			{
+				u64 enabled, running;
+				perf_event_read_local(i_event,
+					      &per_cpu(inst_count, cpu), &enabled, &running);
+			}
 		}
 		if (p1_event)
 			perf_event_enable(p1_event);

@@ -16,6 +16,9 @@
 #include "mtk_ftrace.h"
 #include "trace.h"
 
+#define CREATE_TRACE_POINTS
+#include <trace/events/mtk_events.h>
+
 #ifdef CONFIG_MTK_PERF_TRACKER
 #include <mt-plat/perf_tracker.h>
 #endif

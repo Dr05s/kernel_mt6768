@@ -18,6 +18,7 @@
 #include <linux/workqueue.h>
 #include <linux/spinlock.h>
 #include <linux/math64.h>
+#include <linux/timekeeping.h>
 
 #define FILTER_DATAPOINTS	16
 #define FILTER_FREQ		10000000ULL /* 10 ms */
@@ -134,7 +135,7 @@ uint64_t archcounter_timesync_to_boot(uint64_t hwclock)
 	spin_lock(&moving_average_lock);
 
 	local_irq_save(flags);
-	base_time = ktime_get_boot_ns();
+	base_time = ktime_get_boottime_ns();
 	archcounter_time = arch_counter_to_ns(arch_counter_get_cntvct());
 	local_irq_restore(flags);
 
@@ -178,7 +179,7 @@ static void timesync_test_work_func(struct work_struct *work)
 
 
 	local_irq_save(flags);
-	base_time = ktime_get_boot_ns();
+	base_time = ktime_get_boottime_ns();
 	archcounter_time = arch_counter_to_ns(arch_counter_get_cntvct());
 	local_irq_restore(flags);
 

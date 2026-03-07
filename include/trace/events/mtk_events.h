@@ -284,11 +284,10 @@ TRACE_EVENT(hps_update,
 		 unsigned int up_avg,
 		 unsigned int down_avg,
 		 unsigned int tlp_avg,
-		 unsigned int rush_cnt,
-		 char *target),
+		 unsigned int rush_cnt),
 
 	TP_ARGS(actionID, online, cur_load, cur_tlp, cur_iowait, hvytsk,
-		limit, base, up_avg, down_avg, tlp_avg, rush_cnt, target),
+		limit, base, up_avg, down_avg, tlp_avg, rush_cnt),
 
 	TP_STRUCT__entry(
 		__field(unsigned int, actionID)
@@ -303,7 +302,6 @@ TRACE_EVENT(hps_update,
 		__field(unsigned int, down_avg)
 		__field(unsigned int, tlp_avg)
 		__field(unsigned int, rush_cnt)
-		__string(target, target)
 	),
 
 	TP_fast_assign(
@@ -319,15 +317,14 @@ TRACE_EVENT(hps_update,
 		__entry->down_avg = down_avg;
 		__entry->tlp_avg = tlp_avg;
 		__entry->rush_cnt = rush_cnt;
-		__assign_str(target, target);),
+	),
 
 	TP_printk
-	("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s",
+	("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u)",
 		__entry->actionID, __get_str(online), __entry->cur_load,
 		__entry->cur_tlp, __entry->cur_iowait, __get_str(hvytsk),
 		__get_str(limit), __get_str(base), __entry->up_avg,
-		__entry->down_avg, __entry->tlp_avg, __entry->rush_cnt,
-		__get_str(target))
+		__entry->down_avg, __entry->tlp_avg, __entry->rush_cnt)
 );
 
 #if 0
@@ -524,9 +521,7 @@ TRACE_EVENT(perf_index_s,
 		int io_all_w,
 		int io_reqsz_w,
 		int io_reqc_w,
-		int io_dur,
-		int io_q_dept,
-		int *stall
+		int io_dur
 	),
 
 	TP_ARGS(free_mem,
@@ -534,9 +529,7 @@ TRACE_EVENT(perf_index_s,
 		io_wl,
 		io_req_r, io_all_r, io_reqsz_r, io_reqc_r,
 		io_req_w, io_all_w, io_reqsz_w, io_reqc_w,
-		io_dur,
-		io_q_dept,
-		stall
+		io_dur
 ),
 
 	TP_STRUCT__entry(
@@ -552,8 +545,6 @@ TRACE_EVENT(perf_index_s,
 		__field(int, io_reqsz_w)
 		__field(int, io_reqc_w)
 		__field(int, io_dur)
-		__field(int, io_q_dept)
-		__array(int, stall, 8)
 	),
 
 	TP_fast_assign(
@@ -569,12 +560,10 @@ TRACE_EVENT(perf_index_s,
 		__entry->io_reqsz_w = io_reqsz_w;
 		__entry->io_reqc_w  = io_reqc_w;
 		__entry->io_dur     = io_dur;
-		__entry->io_q_dept  = io_q_dept;
-		memcpy(__entry->stall, stall, sizeof(int)*8);
 	),
 
 	TP_printk(
-		"free_mem=%ld avail_mem=%ld iostats=%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d stall=%d|%d|%d|%d|%d|%d|%d|%d",
+		"free_mem=%ld avail_mem=%ld iostats=%d|%d|%d|%d|%d|%d|%d|%d|%d|%d",
 		__entry->free_mem,
 		__entry->avail_mem,
 		__entry->io_wl,
@@ -582,11 +571,7 @@ TRACE_EVENT(perf_index_s,
 		__entry->io_reqsz_r, __entry->io_reqc_r,
 		__entry->io_req_w, __entry->io_all_w,
 		__entry->io_reqsz_w, __entry->io_reqc_w,
-		__entry->io_dur,  __entry->io_q_dept,
-		__entry->stall[0], __entry->stall[1],
-		__entry->stall[2], __entry->stall[3],
-		__entry->stall[4], __entry->stall[5],
-		__entry->stall[6], __entry->stall[7])
+		__entry->io_dur)
 );
 
 #endif /* _TRACE_MTK_EVENTS_H */

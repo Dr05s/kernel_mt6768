@@ -330,11 +330,11 @@ void __perf_tracker(u64 wallclock,
 			iostat->reqsize_r, iostat->reqcnt_r,
 			iostat->tp_req_w, iostat->tp_all_w,
 			iostat->reqsize_w, iostat->reqcnt_w,
-			iostat->duration, iostat->q_depth,
+			iostat->duration
 #else
-			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 #endif
-			stall);
+			);
 }
 
 #ifdef CONFIG_MTK_GAUGE_VERSION

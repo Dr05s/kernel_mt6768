@@ -53,6 +53,7 @@
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
 #include "mtk_ftrace.h"
+#include <trace/events/mtk_events.h>
 #endif
 /*
  * On boot up, the ring buffer is set to the minimum size, so that
