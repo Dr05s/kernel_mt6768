@@ -34,16 +34,16 @@
 #define CPU_DVFS_FREQ15_LL_6768		500000		/* KHz */
 
 /* for DVFS OPP table B */
-#define CPU_DVFS_FREQ0_L_6768		2133000		/* KHz */
-#define CPU_DVFS_FREQ1_L_6768		2066000		/* KHz */
-#define CPU_DVFS_FREQ2_L_6768		2000000		/* KHz */
-#define CPU_DVFS_FREQ3_L_6768		1933000		/* KHz */
-#define CPU_DVFS_FREQ4_L_6768		1866000		/* KHz */
-#define CPU_DVFS_FREQ5_L_6768		1800000		/* KHz */
-#define CPU_DVFS_FREQ6_L_6768		1681000		/* KHz */
+#define CPU_DVFS_FREQ0_L_6768		2000000		/* KHz */
+#define CPU_DVFS_FREQ1_L_6768		1950000		/* KHz */
+#define CPU_DVFS_FREQ2_L_6768		1900000		/* KHz */
+#define CPU_DVFS_FREQ3_L_6768		1850000		/* KHz */
+#define CPU_DVFS_FREQ4_L_6768		1800000		/* KHz */
+#define CPU_DVFS_FREQ5_L_6768		1710000		/* KHz */
+#define CPU_DVFS_FREQ6_L_6768		1621000		/* KHz */
 #define CPU_DVFS_FREQ7_L_6768		1532000		/* KHz */
-#define CPU_DVFS_FREQ8_L_6768		1473000		/* KHz */
-#define CPU_DVFS_FREQ9_L_6768		1384000		/* KHz */
+#define CPU_DVFS_FREQ8_L_6768		1443000		/* KHz */
+#define CPU_DVFS_FREQ9_L_6768		1354000		/* KHz */
 #define CPU_DVFS_FREQ10_L_6768		1295000		/* KHz */
 #define CPU_DVFS_FREQ11_L_6768		1176000		/* KHz */
 #define CPU_DVFS_FREQ12_L_6768		1087000		/* KHz */
@@ -361,16 +361,16 @@
 #define CPU_DVFS_FREQ15_LL_6768_v7		500000		/* KHz */
 
 /* for DVFS OPP table B */
-#define CPU_DVFS_FREQ0_L_6768_v7		2000000		/* KHz */
-#define CPU_DVFS_FREQ1_L_6768_v7		1950000		/* KHz */
-#define CPU_DVFS_FREQ2_L_6768_v7		1900000		/* KHz */
-#define CPU_DVFS_FREQ3_L_6768_v7		1850000		/* KHz */
-#define CPU_DVFS_FREQ4_L_6768_v7		1800000		/* KHz */
-#define CPU_DVFS_FREQ5_L_6768_v7		1710000		/* KHz */
-#define CPU_DVFS_FREQ6_L_6768_v7		1621000		/* KHz */
+#define CPU_DVFS_FREQ0_L_6768_v7		2133000		/* KHz */
+#define CPU_DVFS_FREQ1_L_6768_v7		2066000		/* KHz */
+#define CPU_DVFS_FREQ2_L_6768_v7		2000000		/* KHz */
+#define CPU_DVFS_FREQ3_L_6768_v7		1933000		/* KHz */
+#define CPU_DVFS_FREQ4_L_6768_v7		1866000		/* KHz */
+#define CPU_DVFS_FREQ5_L_6768_v7		1800000		/* KHz */
+#define CPU_DVFS_FREQ6_L_6768_v7		1681000		/* KHz */
 #define CPU_DVFS_FREQ7_L_6768_v7		1532000		/* KHz */
-#define CPU_DVFS_FREQ8_L_6768_v7		1443000		/* KHz */
-#define CPU_DVFS_FREQ9_L_6768_v7		1354000		/* KHz */
+#define CPU_DVFS_FREQ8_L_6768_v7		1473000		/* KHz */
+#define CPU_DVFS_FREQ9_L_6768_v7		1384000		/* KHz */
 #define CPU_DVFS_FREQ10_L_6768_v7		1295000		/* KHz */
 #define CPU_DVFS_FREQ11_L_6768_v7		1176000		/* KHz */
 #define CPU_DVFS_FREQ12_L_6768_v7		1087000		/* KHz */
