@@ -17,38 +17,38 @@
 /**************************************************
  * MT6768/MT6767 : GPU DVFS OPP table Setting
  **************************************************/
-#define SEG_GPU_DVFS_FREQ0			(1000000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ1			(975000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ2			(950000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ3			(925000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ4			(900000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ5			(875000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ6			(850000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ7			(823000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ8			(796000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ9			(769000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ10			(743000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ11			(716000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ12			(690000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ13			(663000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ14			(637000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ15			(611000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ16			(586000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ17			(560000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ18			(535000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ19			(509000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ20			(484000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ21			(467000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ22			(450000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ23			(434000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ24			(417000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ25			(400000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ26			(383000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ27			(366000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ28			(349000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ29			(332000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ30			(315000)	/* KHz */
-#define SEG_GPU_DVFS_FREQ31			(299000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ0			(1100000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ1			(1000000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ2			(975000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ3			(950000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ4			(925000	/* KHz */
+#define SEG_GPU_DVFS_FREQ5			(900000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ6			(875000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ7			(850000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ8			(823000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ9			(796000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ10			(769000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ11			(743000	/* KHz */
+#define SEG_GPU_DVFS_FREQ12			(716000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ13			(690000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ14			(663000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ15			(637000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ16			(611000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ17			(586000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ18			(560000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ19			(535000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ20			(509000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ21			(484000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ22			(467000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ23			(450000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ24			(434000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ25			(417000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ26			(400000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ27			(383000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ28			(366000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ29			(349000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ30			(332000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ31			(315000)	/* KHz */
 
 #define SEG_GPU_DVFS_VOLT0		(95000)		/* mV x 100 */
 #define SEG_GPU_DVFS_VOLT1		(92500)		/* mV x 100 */
