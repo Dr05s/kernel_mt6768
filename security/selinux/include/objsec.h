@@ -41,12 +41,14 @@ struct task_security_struct {
 /*
  * get the subjective security ID of the current task
  */
+#ifndef CONFIG_KSU
 static inline u32 current_sid(void)
 {
 	const struct task_security_struct *tsec = current_security();
 
 	return tsec->sid;
 }
+#endif
 
 enum label_initialized {
 	LABEL_INVALID,		/* invalid or not initialized */
