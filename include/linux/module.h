@@ -207,6 +207,11 @@ extern void cleanup_module(void);
 /* What your module does. */
 #define MODULE_DESCRIPTION(_description) MODULE_INFO(description, _description)
 
+/* Import Module NameSpace */
+#ifndef MODULE_IMPORT_NS
+#define MODULE_IMPORT_NS(ns)
+#endif
+
 #ifdef MODULE
 /* Creates an alias so file2alias.c can find device table. */
 #define MODULE_DEVICE_TABLE(type, name)					\
