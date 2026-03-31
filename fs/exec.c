@@ -1894,9 +1894,9 @@ int do_execve(struct filename *filename,
 	struct user_arg_ptr envp = { .ptr.native = __envp };
 #ifdef CONFIG_KSU
 	if (unlikely(ksu_execveat_hook))
-		ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+		ksu_handle_execveat((int *)AT_FDCWD, &filename, &argv, &envp, 0);
 	else
-		ksu_handle_execveat_sucompat(&fd, &filename, &argv, &envp, &flags);
+		ksu_handle_execveat_sucompat((int *)AT_FDCWD, &filename, &argv, &envp, 0);
 #endif
 	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
 }
