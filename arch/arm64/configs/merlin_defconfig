@@ -4513,6 +4513,7 @@ CONFIG_KPM=y
 #
 # KernelSU - SUSFS
 #
+CONFIG_KSU_SUSFS=y
 
 #
 # Firmware Drivers
