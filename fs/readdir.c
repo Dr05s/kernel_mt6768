@@ -23,6 +23,9 @@
 
 #include <linux/uaccess.h>
 
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 #include <linux/susfs_def.h>
 extern bool susfs_is_inode_sus_path(struct inode *inode);
@@ -361,6 +364,11 @@ static int filldir64(struct dir_context *ctx, const char *name, int namlen,
 	dirent = buf->previous;
 	if (dirent) {
 		if (signal_pending(current))
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+		if (susfs_sus_ino_for_filldir64(ino)) {
+			return 0;
+		}
+#endif
 			return -EINTR;
 		if (__put_user(offset, &dirent->d_off))
 			goto efault;
