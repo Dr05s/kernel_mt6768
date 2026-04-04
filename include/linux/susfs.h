@@ -7,6 +7,7 @@
 #include <linux/hashtable.h>
 #include <linux/path.h>
 #include <linux/susfs_def.h>
+#include <linux/mount.h>
 
 #define SUSFS_VERSION "v2.0.0"
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
@@ -14,6 +15,45 @@
 #else
 #define SUSFS_VARIANT "GKI"
 #endif
+
+/* shared with userspace ksu_susfs tool */
+#define CMD_SUSFS_ADD_SUS_PATH 0x55555
+#define CMD_SUSFS_ADD_SUS_MOUNT 0x55556
+#define CMD_SUSFS_ADD_SUS_KSTAT 0x55558
+#define CMD_SUSFS_UPDATE_SUS_KSTAT 0x55559
+#define CMD_SUSFS_ADD_TRY_UMOUNT 0x5555a
+#define CMD_SUSFS_SET_UNAME 0x5555b
+#define CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY 0x5555c
+#define CMD_SUSFS_ENABLE_LOG 0x5555d
+#define CMD_SUSFS_ADD_SUS_MAPS_STATICALLY 0x5555e
+#define CMD_SUSFS_ADD_SUS_PROC_FD_LINK 0x5555f
+#define CMD_SUSFS_ADD_SUS_MAPS 0x55560
+#define CMD_SUSFS_UPDATE_SUS_MAPS 0x55561
+#define CMD_SUSFS_ADD_SUS_MEMFD 0x55562
+
+#define SUSFS_MAX_LEN_PATHNAME 256 // 256 should address many paths already unless you are doing some strange experimental stuff, then set your own desired length
+#define SUSFS_MAX_LEN_MFD_NAME 248
+#define SUSFS_MAX_SUS_MNTS 300 // I think 300 is now enough? This includes the mount entries for each process and sus mounts added by user 
+#define SUSFS_MAX_SUS_MAPS 200 // I think 200 is now enough? Tell me why if you have over 200 entries
+
+#define SUSFS_MAP_FILES_ACTION_REMOVE_WRITE_PERM 1
+#define SUSFS_MAP_FILES_ACTION_HIDE_DENTRY 2
+
+/* non shared to userspace ksu_susfs tool */
+#define SYSCALL_FAMILY_ALL_ENOENT 0
+#define SYSCALL_FAMILY_OPENAT 1
+#define SYSCALL_FAMILY_MKNOD 2
+#define SYSCALL_FAMILY_MKDIRAT 3
+#define SYSCALL_FAMILY_RMDIR 4
+#define SYSCALL_FAMILY_UNLINKAT 5
+#define SYSCALL_FAMILY_SYMLINKAT_NEWNAME 6
+#define SYSCALL_FAMILY_LINKAT_OLDNAME 7
+#define SYSCALL_FAMILY_LINKAT_NEWNAME 8
+#define SYSCALL_FAMILY_RENAMEAT2_OLDNAME 9
+#define SYSCALL_FAMILY_RENAMEAT2_NEWNAME 10
+#define SYSCALL_FAMILY_TRUNCATE 11
+#define SYSCALL_FAMILY_FACCESSAT 12
+#define SYSCALL_FAMILY_CHDIR 13
 
 /*********/
 /* MACRO */
@@ -221,7 +261,7 @@ void susfs_add_sus_map(void __user **user_info);
 #endif
 
 void susfs_set_avc_log_spoofing(void __user **user_info);
-
+int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, int syscall_family);
 void susfs_get_enabled_features(void __user **user_info);
 void susfs_show_variant(void __user **user_info);
 void susfs_show_version(void __user **user_info);
