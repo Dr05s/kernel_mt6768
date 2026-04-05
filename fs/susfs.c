@@ -546,6 +546,56 @@ void susfs_spoof_uname(struct new_utsname* tmp) {
 }
 #endif // #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
+int susfs_sus_path_by_path(struct path* file, int* errno_to_be_changed, int syscall_family)
+#else
+int susfs_sus_path_by_path(const struct path* file, int* errno_to_be_changed, int syscall_family)
+#endif
+{
+	int res = 0;
+	int status = 0;
+	char* path = NULL;
+	char* ptr = NULL;
+	char* end = NULL;
+	struct st_susfs_sus_path_list *cursor, *temp;
+
+	if (!uid_matches_suspicious_path() || file == NULL) {
+		return status;
+	}
+
+	path = kmalloc(PAGE_SIZE, GFP_KERNEL);
+	if (path == NULL) {
+		SUSFS_LOGE("no enough memory\n");
+		return status;
+	}
+	ptr = d_path(file, path, PAGE_SIZE);
+	if (IS_ERR(ptr)) {
+		SUSFS_LOGE("d_path() failed\n");
+		goto out_free_path;
+	}
+	end = mangle_path(path, ptr, " \t\n\\");
+	if (!end) {
+		goto out_free_path;
+	}
+	res = end - path;
+	path[(size_t) res] = '\0';
+
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_PATH, list) {
+		if (unlikely(!strcmp(cursor->info.target_pathname, path))) {
+			SUSFS_LOGI("hiding target_pathname: '%s', target_ino: '%lu'\n", cursor->info.target_pathname, cursor->info.target_ino);
+			if (errno_to_be_changed != NULL) {
+				susfs_change_error_no_by_pathname(path, errno_to_be_changed, syscall_family);
+			}
+			status = 1;
+			goto out_free_path;
+		}
+	}
+
+out_free_path:
+	kfree(path);
+	return status;
+}
+
 int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, int syscall_family) {
 	int status = 0;
 	int ret = 0;
@@ -567,6 +617,39 @@ int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, 
 	}
 
 	return status;
+}
+
+void susfs_sus_kstat(unsigned long ino, struct stat* out_stat) {
+	struct st_susfs_sus_kstat_list *cursor, *temp;
+
+	if (!uid_matches_suspicious_kstat())
+		return;
+
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_KSTAT_SPOOFER, list) {
+		if (cursor->info.target_ino == ino) {
+			SUSFS_LOGI("spoofing kstat for pathname '%s' for UID %i\n", cursor->info.target_pathname, current_uid().val);
+			out_stat->st_ino = cursor->info.spoofed_ino;
+#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
+#ifdef CONFIG_MIPS
+			out_stat->st_dev = new_encode_dev(cursor->info.spoofed_dev);
+#else
+			out_stat->st_dev = huge_encode_dev(cursor->info.spoofed_dev);
+#endif /* CONFIG_MIPS */
+#else
+			out_stat->st_dev = old_encode_dev(cursor->info.spoofed_dev);
+#endif /* defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64) */
+			out_stat->st_nlink = cursor->info.spoofed_nlink;
+			out_stat->st_atime = cursor->info.spoofed_atime_tv_sec;
+			out_stat->st_mtime = cursor->info.spoofed_mtime_tv_sec;
+			out_stat->st_ctime = cursor->info.spoofed_ctime_tv_sec;
+#ifdef _STRUCT_TIMESPEC
+			out_stat->st_atime_nsec = cursor->info.spoofed_atime_tv_nsec;
+			out_stat->st_mtime_nsec = cursor->info.spoofed_mtime_tv_nsec;
+			out_stat->st_ctime_nsec = cursor->info.spoofed_ctime_tv_nsec;
+#endif
+			return;
+		}
+	}
 }
 
 /* enable_log */
