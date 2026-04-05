@@ -619,6 +619,20 @@ int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, 
 	return status;
 }
 
+int susfs_sus_ino_for_filldir64(unsigned long ino) {
+	struct st_susfs_sus_path_list *cursor, *temp;
+
+	if (!uid_matches_suspicious_path())
+		return 0;
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_PATH, list) {
+		if (cursor->info.target_ino == ino) {
+			SUSFS_LOGI("hiding target_pathname: '%s', target_ino: '%lu'\n", cursor->info.target_pathname, cursor->info.target_ino);
+			return 1;
+		}
+	}
+	return 0;
+}
+
 void susfs_sus_kstat(unsigned long ino, struct stat* out_stat) {
 	struct st_susfs_sus_kstat_list *cursor, *temp;
 
