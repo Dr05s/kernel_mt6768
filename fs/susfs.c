@@ -546,6 +546,526 @@ void susfs_spoof_uname(struct new_utsname* tmp) {
 }
 #endif // #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
+int susfs_sus_path_by_path(struct path* file, int* errno_to_be_changed, int syscall_family)
+#else
+int susfs_sus_path_by_path(const struct path* file, int* errno_to_be_changed, int syscall_family)
+#endif
+{
+	int res = 0;
+	int status = 0;
+	char* path = NULL;
+	char* ptr = NULL;
+	char* end = NULL;
+	struct st_susfs_sus_path_list *cursor, *temp;
+
+	if (!uid_matches_suspicious_path() || file == NULL) {
+		return status;
+	}
+
+	path = kmalloc(PAGE_SIZE, GFP_KERNEL);
+	if (path == NULL) {
+		SUSFS_LOGE("no enough memory\n");
+		return status;
+	}
+	ptr = d_path(file, path, PAGE_SIZE);
+	if (IS_ERR(ptr)) {
+		SUSFS_LOGE("d_path() failed\n");
+		goto out_free_path;
+	}
+	end = mangle_path(path, ptr, " \t\n\\");
+	if (!end) {
+		goto out_free_path;
+	}
+	res = end - path;
+	path[(size_t) res] = '\0';
+
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_PATH, list) {
+		if (unlikely(!strcmp(cursor->info.target_pathname, path))) {
+			SUSFS_LOGI("hiding target_pathname: '%s', target_ino: '%lu'\n", cursor->info.target_pathname, cursor->info.target_ino);
+			if (errno_to_be_changed != NULL) {
+				susfs_change_error_no_by_pathname(path, errno_to_be_changed, syscall_family);
+			}
+			status = 1;
+			goto out_free_path;
+		}
+	}
+
+out_free_path:
+	kfree(path);
+	return status;
+}
+
+int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, int syscall_family) {
+	int status = 0;
+	int ret = 0;
+	struct path path;
+
+	if (IS_ERR(name)) {
+		return status;
+	}
+
+	if (!uid_matches_suspicious_path() || name == NULL) {
+		return status;
+	}
+
+	ret = kern_path(name->name, LOOKUP_FOLLOW, &path);
+
+	if (!ret) {
+		status = susfs_sus_path_by_path(&path, errno_to_be_changed, syscall_family);
+		path_put(&path);
+	}
+
+	return status;
+}
+
+int susfs_sus_ino_for_filldir64(unsigned long ino) {
+	struct st_susfs_sus_path_list *cursor, *temp;
+
+	if (!uid_matches_suspicious_path())
+		return 0;
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_PATH, list) {
+		if (cursor->info.target_ino == ino) {
+			SUSFS_LOGI("hiding target_pathname: '%s', target_ino: '%lu'\n", cursor->info.target_pathname, cursor->info.target_ino);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int susfs_sus_mount(struct vfsmount* mnt, struct path* root) {
+	struct st_susfs_sus_mount_list *cursor, *temp;
+	char* path = NULL;
+	char* ptr = NULL;
+	char* end = NULL;
+	int res = 0;
+	int status = 0;
+	struct path mnt_path = {
+		.dentry = mnt->mnt_root,
+		.mnt = mnt
+	};
+
+	path = kmalloc(PAGE_SIZE, GFP_KERNEL);
+	if (path == NULL) {
+		SUSFS_LOGE("no enough memory\n");
+		return 0;
+	}
+	ptr = __d_path(&mnt_path, root, path, PAGE_SIZE);
+	if (IS_ERR(ptr)) {
+		SUSFS_LOGE("__d_path() failed\n");
+		goto out_free_path;
+	}
+	end = mangle_path(path, ptr, " \t\n\\");
+	if (!end) {
+		goto out_free_path;
+	}
+	res = end - path;
+	path[(size_t) res] = '\0';
+
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_MOUNT, list) {
+		if (unlikely(!strcmp(path, cursor->info.target_pathname))) {
+			SUSFS_LOGI("hide target_pathname '%s' from mounts\n",
+						cursor->info.target_pathname);
+			status = 1;
+			goto out_free_path;
+		}
+	}
+out_free_path:
+	kfree(path);
+	return status;
+}
+
+void susfs_sus_kstat(unsigned long ino, struct stat* out_stat) {
+	struct st_susfs_sus_kstat_list *cursor, *temp;
+
+	if (!uid_matches_suspicious_kstat())
+		return;
+
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_KSTAT_SPOOFER, list) {
+		if (cursor->info.target_ino == ino) {
+			SUSFS_LOGI("spoofing kstat for pathname '%s' for UID %i\n", cursor->info.target_pathname, current_uid().val);
+			out_stat->st_ino = cursor->info.spoofed_ino;
+#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
+#ifdef CONFIG_MIPS
+			out_stat->st_dev = new_encode_dev(cursor->info.spoofed_dev);
+#else
+			out_stat->st_dev = huge_encode_dev(cursor->info.spoofed_dev);
+#endif /* CONFIG_MIPS */
+#else
+			out_stat->st_dev = old_encode_dev(cursor->info.spoofed_dev);
+#endif /* defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64) */
+			out_stat->st_nlink = cursor->info.spoofed_nlink;
+			out_stat->st_atime = cursor->info.spoofed_atime_tv_sec;
+			out_stat->st_mtime = cursor->info.spoofed_mtime_tv_sec;
+			out_stat->st_ctime = cursor->info.spoofed_ctime_tv_sec;
+#ifdef _STRUCT_TIMESPEC
+			out_stat->st_atime_nsec = cursor->info.spoofed_atime_tv_nsec;
+			out_stat->st_mtime_nsec = cursor->info.spoofed_mtime_tv_nsec;
+			out_stat->st_ctime_nsec = cursor->info.spoofed_ctime_tv_nsec;
+#endif
+			return;
+		}
+	}
+}
+
+/* for non statically, it only compare with target_ino, and spoof only the ino, dev to the matched entry
+ * for staticially, it compares depending on the mode user chooses
+ * compare mode:
+ *  1 -> target_ino is 'non-zero', all entries match with target_ino will be spoofed with user defined entry
+ *  2 -> target_ino is 'non-zero', all entries match with [target_ino,target_addr_size,target_prot,target_pgoff,is_isolated_entry] will be spoofed with user defined entry
+ *  3 -> target_ino is 'zero', which is not file, all entries match with [prev_target_ino,next_target_ino] will be spoofed with user defined entry
+ *  4 -> target_ino is 'zero' or 'non-zero', all entries match with [is_file,target_addr_size,target_prot,target_pgoff,target_dev] will be spoofed with user defined entry
+ */
+int susfs_sus_maps(unsigned long target_ino, unsigned long target_addr_size, unsigned long* orig_ino, dev_t* orig_dev, vm_flags_t* flags, unsigned long long* pgoff, struct vm_area_struct* vma, char* out_name) {
+	struct st_susfs_sus_maps_list *cursor, *temp;
+	struct inode *tmp_inode, *tmp_inode_prev, *tmp_inode_next;
+
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_MAPS_SPOOFER, list) {
+		// if it is NOT statically
+		if (!cursor->info.is_statically) {
+			if (target_ino != 0 && cursor->info.target_ino == target_ino) {
+				*orig_ino = cursor->info.spoofed_ino;
+				*orig_dev = cursor->info.spoofed_dev;
+				SUSFS_LOGI("spoofing maps -> is_statically: '%d', compare_mode: '%d', is_file: '%d', is_isolated_entry: '%d', prev_target_ino: '%lu', next_target_ino: '%lu', target_ino: '%lu', target_dev: '0x%x', target_pgoff: '0x%x', target_prot: '0x%x', target_addr_size: '0x%x', spoofed_pathname: '%s', spoofed_ino: '%lu', spoofed_dev: '0x%x', spoofed_pgoff: '0x%x', spoofed_prot: '0x%x'\n",
+				cursor->info.is_statically, cursor->info.compare_mode, cursor->info.is_file,
+				cursor->info.is_isolated_entry, cursor->info.prev_target_ino, cursor->info.next_target_ino,
+				cursor->info.target_ino, cursor->info.target_dev, cursor->info.target_pgoff,
+				cursor->info.target_prot, cursor->info.target_addr_size, cursor->info.spoofed_pathname,
+				cursor->info.spoofed_ino, cursor->info.spoofed_dev, cursor->info.spoofed_pgoff,
+				cursor->info.spoofed_prot);
+				return 1;
+			}
+		// if it is statically, then compare with compare_mode
+		} else if (cursor->info.compare_mode > 0) {
+			switch(cursor->info.compare_mode) {
+				case 1:
+					if (target_ino != 0 && cursor->info.target_ino == target_ino) {
+						goto do_spoof;
+					}
+					break;
+				case 2:
+					if (target_ino != 0 && cursor->info.target_ino == target_ino &&
+						((cursor->info.target_prot & VM_READ) == (*flags & VM_READ)) &&
+						((cursor->info.target_prot & VM_WRITE) == (*flags & VM_WRITE)) &&
+						((cursor->info.target_prot & VM_EXEC) == (*flags & VM_EXEC)) &&
+						((cursor->info.target_prot & VM_MAYSHARE) == (*flags & VM_MAYSHARE)) &&
+						  cursor->info.target_addr_size == target_addr_size &&
+						  cursor->info.target_pgoff == *pgoff) {
+						// if is NOT isolated_entry, check for vma->vm_next and vma->vm_prev to see if they have the same inode
+						if (!cursor->info.is_isolated_entry) {
+							if (vma && vma->vm_next) {
+								if (vma->vm_next->vm_file) {
+									tmp_inode = file_inode(vma->vm_next->vm_file);
+									if (tmp_inode->i_ino == cursor->info.target_ino)
+										goto do_spoof;
+								}
+							}
+							if (vma && vma->vm_prev) {
+								if (vma->vm_prev->vm_file) {
+									tmp_inode = file_inode(vma->vm_prev->vm_file);
+									if (tmp_inode->i_ino == cursor->info.target_ino)
+										goto do_spoof;
+								}
+							}
+							continue;
+						// if it is isolated_entry
+						} else {
+							if (vma && vma->vm_next) {
+								if (vma->vm_next->vm_file) {
+									tmp_inode = file_inode(vma->vm_next->vm_file);
+									if (tmp_inode->i_ino == cursor->info.target_ino) {
+										continue;
+									}
+								}
+							}
+							if (vma && vma->vm_prev) {
+								if (vma->vm_prev->vm_file) {
+									tmp_inode = file_inode(vma->vm_prev->vm_file);
+									if (tmp_inode->i_ino == cursor->info.target_ino) {
+										continue;
+									}
+								}
+							}
+							// both prev and next don't have the same indoe as current entry, we can spoof now
+							goto do_spoof;
+						}
+					}
+					break;
+				case 3:
+					// if current vma is a file, it is not our target
+					if (vma->vm_file) continue;
+					// compare next target ino only
+					if (cursor->info.prev_target_ino == 0 && cursor->info.next_target_ino > 0) {
+						if (vma->vm_next && vma->vm_next->vm_file) {
+							tmp_inode_next = file_inode(vma->vm_next->vm_file);
+							if (tmp_inode_next->i_ino == cursor->info.next_target_ino) {
+								goto do_spoof;
+							}
+						}
+					// compare prev target ino only
+					} else if (cursor->info.prev_target_ino > 0 && cursor->info.next_target_ino == 0) {
+						if (vma->vm_prev && vma->vm_prev->vm_file) {
+							tmp_inode_prev = file_inode(vma->vm_prev->vm_file);
+							if (tmp_inode_prev->i_ino == cursor->info.prev_target_ino) {
+								goto do_spoof;
+							}
+						}
+					// compare both prev ino and next ino
+					} else if (cursor->info.prev_target_ino > 0 && cursor->info.next_target_ino > 0) {
+						if (vma->vm_prev && vma->vm_prev->vm_file &&
+							vma->vm_next && vma->vm_next->vm_file) {
+							tmp_inode_prev = file_inode(vma->vm_prev->vm_file);
+							tmp_inode_next = file_inode(vma->vm_next->vm_file);
+							if (tmp_inode_prev->i_ino == cursor->info.prev_target_ino &&
+							    tmp_inode_next->i_ino == cursor->info.next_target_ino) {
+								goto do_spoof;
+							}
+						}
+					}
+					break;
+				case 4:
+					if ((cursor->info.is_file && vma->vm_file)||(!cursor->info.is_file && !vma->vm_file)) {
+						if (cursor->info.target_dev == *orig_dev &&
+							cursor->info.target_pgoff == *pgoff &&
+							((cursor->info.target_prot & VM_READ) == (*flags & VM_READ) &&
+							 (cursor->info.target_prot & VM_WRITE) == (*flags & VM_WRITE) &&
+							 (cursor->info.target_prot & VM_EXEC) == (*flags & VM_EXEC) &&
+							 (cursor->info.target_prot & VM_MAYSHARE) == (*flags & VM_MAYSHARE)) &&
+							  cursor->info.target_addr_size == target_addr_size) {
+							goto do_spoof;
+						}
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		continue;
+do_spoof:
+		if (cursor->info.need_to_spoof_pathname) {
+			strncpy(out_name, cursor->info.spoofed_pathname, SUSFS_MAX_LEN_PATHNAME-1);
+		}
+		if (cursor->info.need_to_spoof_ino) {
+			*orig_ino = cursor->info.spoofed_ino;
+		}
+		if (cursor->info.need_to_spoof_dev) {
+			*orig_dev = cursor->info.spoofed_dev;
+		}
+		if (cursor->info.need_to_spoof_prot) {
+			if (cursor->info.spoofed_prot & VM_READ) *flags |= VM_READ;
+			else *flags = ((*flags | VM_READ) ^ VM_READ);
+			if (cursor->info.spoofed_prot & VM_WRITE) *flags |= VM_WRITE;
+			else *flags = ((*flags | VM_WRITE) ^ VM_WRITE);
+			if (cursor->info.spoofed_prot & VM_EXEC) *flags |= VM_EXEC;
+			else *flags = ((*flags | VM_EXEC) ^ VM_EXEC);
+			if (cursor->info.spoofed_prot & VM_MAYSHARE) *flags |= VM_MAYSHARE;
+			else *flags = ((*flags | VM_MAYSHARE) ^ VM_MAYSHARE);
+		}
+		if (cursor->info.need_to_spoof_pgoff) {
+			*pgoff = cursor->info.spoofed_pgoff;
+		}
+		SUSFS_LOGI("spoofing maps -> is_statically: '%d', compare_mode: '%d', is_file: '%d', is_isolated_entry: '%d', prev_target_ino: '%lu', next_target_ino: '%lu', target_ino: '%lu', target_dev: '0x%x', target_pgoff: '0x%x', target_prot: '0x%x', target_addr_size: '0x%x', spoofed_pathname: '%s', spoofed_ino: '%lu', spoofed_dev: '0x%x', spoofed_pgoff: '0x%x', spoofed_prot: '0x%x'\n",
+		cursor->info.is_statically, cursor->info.compare_mode, cursor->info.is_file,
+		cursor->info.is_isolated_entry, cursor->info.prev_target_ino, cursor->info.next_target_ino,
+		cursor->info.target_ino, cursor->info.target_dev, cursor->info.target_pgoff,
+		cursor->info.target_prot, cursor->info.target_addr_size, cursor->info.spoofed_pathname,
+		cursor->info.spoofed_ino, cursor->info.spoofed_dev, cursor->info.spoofed_pgoff,
+		cursor->info.spoofed_prot);
+		return 2;
+	}
+	return 0;
+}
+
+/* @ This function only does the following:
+ *   1. Spoof the symlink name of a target_ino listed in /proc/self/map_files
+ * 
+ * @Note
+ * - It has limitation as there is no way to check which
+ *   vma address it belongs by passing dentry* only, so it just
+ *   checks for matched dentry* and its target_ino in sus_maps list,
+ *   then spoof the symlink name of the target_ino defined by user.
+ * - Also user cannot see the effects in map_files from other root session,
+ *   because it uses current->mm to compare the dentry, the only way to test
+ *   is to check within its own pid.
+ * - So the BEST practise here is:
+ *     Do NOT spoof the map entries which share the same name to different name
+ *     seperately unless the other spoofed name is empty of which spoofed_ino is 0,
+ *     otherwise there will be inconsistent entries between maps and map_files.
+ */
+void susfs_sus_map_files_readlink(unsigned long target_ino, char* pathname) {
+	struct st_susfs_sus_maps_list *cursor, *temp;
+
+	if (!pathname)
+		return;
+
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_MAPS_SPOOFER, list) {
+		// We are only interested in statically and target_ino > 0
+		if (cursor->info.is_statically && cursor->info.compare_mode > 0 &&
+			target_ino > 0 && cursor->info.target_ino == target_ino)
+		{
+			if (cursor->info.need_to_spoof_pathname) {
+				SUSFS_LOGI("spoofing symlink name of ino '%lu' to '%s' in map_files\n",
+						target_ino, cursor->info.spoofed_pathname);
+				// Don't need to check buffer size as 'pathname' is allocated with 'PAGE_SIZE'
+				// which is way bigger than SUSFS_MAX_LEN_PATHNAME
+				strcpy(pathname, cursor->info.spoofed_pathname);
+				return;
+			}
+		}
+	}
+	return;
+}
+
+/* @ This function mainly does the following:
+ *   1. Remove the user write access for spoofed symlink name in /proc/self/map_files
+ *   2. Prevent the dentry from being seen in /proc/self/map_files
+ * 
+ * @Note
+ * - anon files are supposed to be not shown in /proc/self/map_files and 
+ *   spoofing from memfd name to non-memfd name should not have write
+ *   permission on that target dentry
+ */
+int susfs_sus_map_files_instantiate(struct vm_area_struct* vma) {
+	struct inode *inode = file_inode(vma->vm_file);
+	unsigned long target_ino = inode->i_ino;
+	dev_t target_dev = inode->i_sb->s_dev;
+	unsigned long long target_pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
+	unsigned long target_addr_size = vma->vm_end - vma->vm_start;
+	vm_flags_t target_flags = vma->vm_flags;
+	struct st_susfs_sus_maps_list *cursor, *temp;
+	struct inode *tmp_inode, *tmp_inode_prev, *tmp_inode_next;
+
+	list_for_each_entry_safe(cursor, temp, &LH_SUS_MAPS_SPOOFER, list) {
+		// We are only interested in statically
+		if (!cursor->info.is_statically) {
+			continue;
+		// if it is statically, then compare with compare_mode
+		} else if (cursor->info.compare_mode > 0) {
+			switch(cursor->info.compare_mode) {
+				case 1:
+					if (target_ino != 0 && cursor->info.target_ino == target_ino) {
+						goto do_spoof;
+					}
+					break;
+				case 2:
+					if (target_ino != 0 && cursor->info.target_ino == target_ino &&
+						((cursor->info.target_prot & VM_READ) == (target_flags & VM_READ)) &&
+						((cursor->info.target_prot & VM_WRITE) == (target_flags & VM_WRITE)) &&
+						((cursor->info.target_prot & VM_EXEC) == (target_flags & VM_EXEC)) &&
+						((cursor->info.target_prot & VM_MAYSHARE) == (target_flags & VM_MAYSHARE)) &&
+						  cursor->info.target_addr_size == target_addr_size &&
+						  cursor->info.target_pgoff == target_pgoff) {
+						// if is NOT isolated_entry, check for vma->vm_next and vma->vm_prev to see if they have the same inode
+						if (!cursor->info.is_isolated_entry) {
+							if (vma && vma->vm_next) {
+								if (vma->vm_next->vm_file) {
+									tmp_inode = file_inode(vma->vm_next->vm_file);
+									if (tmp_inode->i_ino == cursor->info.target_ino)
+										goto do_spoof;
+								}
+							}
+							if (vma && vma->vm_prev) {
+								if (vma->vm_prev->vm_file) {
+									tmp_inode = file_inode(vma->vm_prev->vm_file);
+									if (tmp_inode->i_ino == cursor->info.target_ino)
+										goto do_spoof;
+								}
+							}
+							continue;
+						// if it is isolated_entry
+						} else {
+							if (vma && vma->vm_next) {
+								if (vma->vm_next->vm_file) {
+									tmp_inode = file_inode(vma->vm_next->vm_file);
+									if (tmp_inode->i_ino == cursor->info.target_ino) {
+										continue;
+									}
+								}
+							}
+							if (vma && vma->vm_prev) {
+								if (vma->vm_prev->vm_file) {
+									tmp_inode = file_inode(vma->vm_prev->vm_file);
+									if (tmp_inode->i_ino == cursor->info.target_ino) {
+										continue;
+									}
+								}
+							}
+							// both prev and next don't have the same indoe as current entry, we can spoof now
+							goto do_spoof;
+						}
+					}
+					break;
+				case 3:
+					// if current vma is a file, it is not our target
+					if (vma->vm_file) continue;
+					// compare next target ino only
+					if (cursor->info.prev_target_ino == 0 && cursor->info.next_target_ino > 0) {
+						if (vma->vm_next && vma->vm_next->vm_file) {
+							tmp_inode_next = file_inode(vma->vm_next->vm_file);
+							if (tmp_inode_next->i_ino == cursor->info.next_target_ino) {
+								goto do_spoof;
+							}
+						}
+					// compare prev target ino only
+					} else if (cursor->info.prev_target_ino > 0 && cursor->info.next_target_ino == 0) {
+						if (vma->vm_prev && vma->vm_prev->vm_file) {
+							tmp_inode_prev = file_inode(vma->vm_prev->vm_file);
+							if (tmp_inode_prev->i_ino == cursor->info.prev_target_ino) {
+								goto do_spoof;
+							}
+						}
+					// compare both prev ino and next ino
+					} else if (cursor->info.prev_target_ino > 0 && cursor->info.next_target_ino > 0) {
+						if (vma->vm_prev && vma->vm_prev->vm_file &&
+							vma->vm_next && vma->vm_next->vm_file) {
+							tmp_inode_prev = file_inode(vma->vm_prev->vm_file);
+							tmp_inode_next = file_inode(vma->vm_next->vm_file);
+							if (tmp_inode_prev->i_ino == cursor->info.prev_target_ino &&
+							    tmp_inode_next->i_ino == cursor->info.next_target_ino) {
+								goto do_spoof;
+							}
+						}
+					}
+					break;
+				case 4:
+					if ((cursor->info.is_file && vma->vm_file)||(!cursor->info.is_file && !vma->vm_file)) {
+						if (cursor->info.target_dev == target_dev &&
+							cursor->info.target_pgoff == target_pgoff &&
+							((cursor->info.target_prot & VM_READ) == (target_flags & VM_READ) &&
+							 (cursor->info.target_prot & VM_WRITE) == (target_flags & VM_WRITE) &&
+							 (cursor->info.target_prot & VM_EXEC) == (target_flags & VM_EXEC) &&
+							 (cursor->info.target_prot & VM_MAYSHARE) == (target_flags & VM_MAYSHARE)) &&
+							  cursor->info.target_addr_size == target_addr_size) {
+							goto do_spoof;
+						}
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		continue;
+do_spoof:
+		if (!(cursor->info.spoofed_ino == 0 ||
+			(MAJOR(cursor->info.spoofed_dev) == 0 &&
+			(MINOR(cursor->info.spoofed_dev) == 0 || MINOR(cursor->info.spoofed_dev) == 1))))
+		{
+			SUSFS_LOGI("remove user write permission of spoofed symlink '%s' in map_files\n", cursor->info.spoofed_pathname);
+			return 1;
+		} else {
+			SUSFS_LOGI("drop dentry of target_ino '%lu' with spoofed_ino '%lu' in map_files\n",
+						cursor->info.target_ino, cursor->info.spoofed_ino);
+			return 2;
+		}
+		return 0;
+	}
+	return 0;
+}
+
+int susfs_is_sus_maps_list_empty(void) {
+	return list_empty(&LH_SUS_MAPS_SPOOFER);
+}
+
 /* enable_log */
 #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
 
