@@ -289,27 +289,7 @@ void susfs_add_sus_map(void __user **user_info);
 #endif
 
 void susfs_set_avc_log_spoofing(void __user **user_info);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
-int susfs_sus_path_by_path(struct path* file, int* errno_to_be_changed, int syscall_family);
-#else
-int susfs_sus_path_by_path(const struct path* file, int* errno_to_be_changed, int syscall_family);
-#endif
 int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, int syscall_family);
-int susfs_sus_mount(struct vfsmount* mnt, struct path* root);
-int susfs_sus_ino_for_filldir64(unsigned long ino);
-void susfs_sus_kstat(unsigned long ino, struct stat* out_stat);
-int susfs_sus_maps(unsigned long target_ino, unsigned long target_addr_size,
-					unsigned long* orig_ino, dev_t* orig_dev, vm_flags_t* flags,
-					unsigned long long* pgoff, struct vm_area_struct* vma, char* out_name);
-void susfs_sus_map_files_readlink(unsigned long target_ino, char* pathname);
-int susfs_sus_map_files_instantiate(struct vm_area_struct* vma);
-int susfs_is_sus_maps_list_empty(void);
-int susfs_sus_proc_fd_link(char *pathname, int len);
-int susfs_is_sus_proc_fd_link_list_empty(void);
-int susfs_sus_memfd(char *memfd_name);
-void susfs_add_mnt_id_recorder(struct mnt_namespace *ns);
-int susfs_get_fake_mnt_id(int mnt_id, int *out_mnt_id, int *out_parent_mnt_id);
-void susfs_remove_mnt_id_recorder(void);
 
 void susfs_get_enabled_features(void __user **user_info);
 void susfs_show_variant(void __user **user_info);
