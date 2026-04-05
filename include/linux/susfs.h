@@ -288,8 +288,15 @@ struct filename* susfs_get_redirected_path(unsigned long ino);
 void susfs_add_sus_map(void __user **user_info);
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
+int susfs_sus_path_by_path(struct path* file, int* errno_to_be_changed, int syscall_family);
+#else
+int susfs_sus_path_by_path(const struct path* file, int* errno_to_be_changed, int syscall_family);
+#endif
+
 void susfs_set_avc_log_spoofing(void __user **user_info);
 int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, int syscall_family);
+void susfs_sus_kstat(unsigned long ino, struct stat* out_stat);
 
 void susfs_get_enabled_features(void __user **user_info);
 void susfs_show_variant(void __user **user_info);
