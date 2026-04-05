@@ -296,6 +296,7 @@ int susfs_sus_path_by_path(const struct path* file, int* errno_to_be_changed, in
 
 void susfs_set_avc_log_spoofing(void __user **user_info);
 int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, int syscall_family);
+int susfs_sus_ino_for_filldir64(unsigned long ino);
 void susfs_sus_kstat(unsigned long ino, struct stat* out_stat);
 
 void susfs_get_enabled_features(void __user **user_info);
