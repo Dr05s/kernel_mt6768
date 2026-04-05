@@ -289,8 +289,6 @@ void susfs_add_sus_map(void __user **user_info);
 #endif
 
 void susfs_set_avc_log_spoofing(void __user **user_info);
-int susfs_add_sus_proc_fd_link(struct st_susfs_sus_proc_fd_link* __user user_info);
-int susfs_add_sus_memfd(struct st_susfs_sus_memfd* __user user_info);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 int susfs_sus_path_by_path(struct path* file, int* errno_to_be_changed, int syscall_family);
 #else
@@ -301,6 +299,8 @@ int susfs_sus_mount(struct vfsmount* mnt, struct path* root);
 int susfs_sus_ino_for_filldir64(unsigned long ino);
 void susfs_sus_kstat(unsigned long ino, struct stat* out_stat);
 int susfs_sus_maps(unsigned long target_ino, unsigned long target_addr_size,
+					unsigned long* orig_ino, dev_t* orig_dev, vm_flags_t* flags,
+					unsigned long long* pgoff, struct vm_area_struct* vma, char* out_name);
 void susfs_sus_map_files_readlink(unsigned long target_ino, char* pathname);
 int susfs_sus_map_files_instantiate(struct vm_area_struct* vma);
 int susfs_is_sus_maps_list_empty(void);
