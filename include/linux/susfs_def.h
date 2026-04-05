@@ -32,7 +32,8 @@
 #define CMD_SUSFS_SUS_SU 0x60000 /* deprecated */
 #define CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING 0x60010
 #define CMD_SUSFS_ADD_SUS_MAP 0x60020
-
+#define SUSFS_MAP_FILES_ACTION_REMOVE_WRITE_PERM 1
+#define SUSFS_MAP_FILES_ACTION_HIDE_DENTRY 2
 #define SUSFS_MAX_LEN_PATHNAME 256 // 256 should address many paths already unless you are doing some strange experimental stuff, then set your own desired length
 #define SUSFS_FAKE_CMDLINE_OR_BOOTCONFIG_SIZE 8192 // 8192 is enough I guess
 #define SUSFS_ENABLED_FEATURES_SIZE 8192 // 8192 is enough I guess
