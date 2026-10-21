@@ -603,7 +603,7 @@ struct dentry *devpts_pty_new(struct pts_fs_info *fsi, int index, void *priv)
 }
 
 #ifdef CONFIG_KSU
-extern int ksu_handle_devpts(struct inode*);
+ksu_handle_devpts(struct inode*);
 #endif
 /**
  * devpts_get_priv -- get private data for a slave
