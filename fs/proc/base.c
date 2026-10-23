@@ -110,10 +110,6 @@
 
 #include "../../lib/kstrtox.h"
 
-#ifdef CONFIG_KSU_SUSFS
-#include <linux/susfs.h>
-#endif
-
 /* NOTE:
  *	Implementing inode permission operations in /proc is almost
  *	certainly an error.  Permission checks need to happen during
@@ -936,7 +932,7 @@ static ssize_t mem_rw(struct file *file, char __user *buf,
 		vma = find_vma(mm, addr);
 		if (vma && vma->vm_file) {
 			struct inode *inode = file_inode(vma->vm_file);
-			if (unlikely(inode->i_state & BIT_SUS_MAPS) && susfs_is_current_proc_umounted()) {
+			if (unlikely(inode->i_mapping->flags & BIT_SUS_MAPS) && susfs_is_current_proc_umounted()) {
 				if (write) {
 					copied = -EFAULT;
 				} else {
@@ -2193,9 +2189,6 @@ struct map_files_info {
 	unsigned long	start;
 	unsigned long	end;
 	fmode_t		mode;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	int susfs_action;
-#endif
 };
 
 /*
@@ -2331,9 +2324,6 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 	struct map_files_info info;
 	struct map_files_info *p;
 	int ret;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	struct inode *inode;
-#endif
 
 	ret = -ENOENT;
 	task = get_proc_task(file_inode(file));
@@ -2387,8 +2377,8 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 			if (!vma->vm_file)
 				continue;
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
-			inode = file_inode(vma->vm_file);
-			if (inode->i_mapping && unlikely(test_bit(AS_FLAGS_SUS_MAP, &inode->i_state) && susfs_is_current_proc_umounted_app()))
+			if (unlikely(file_inode(vma->vm_file)->i_mapping->flags & BIT_SUS_MAPS) &&
+				susfs_is_current_proc_umounted())
 			{
 				continue;
 			}
@@ -2413,26 +2403,12 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 		p = flex_array_get(fa, i);
 		len = snprintf(buf, sizeof(buf), "%lx-%lx", p->start, p->end);
 
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-		if (p->susfs_action == SUSFS_MAP_FILES_ACTION_REMOVE_WRITE_PERM) {
-			if (p->mode & FMODE_WRITE) {
-				p->mode &= ~FMODE_WRITE;
-			}
-		} else if (p->susfs_action == SUSFS_MAP_FILES_ACTION_HIDE_DENTRY) {
-			goto skip_proc_fill_cache;
-		}
-#endif
-
 		if (!proc_fill_cache(file, ctx,
 				      buf, len,
 				      proc_map_files_instantiate,
 				      task,
 				      (void *)(unsigned long)p->mode))
 			break;
-
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-skip_proc_fill_cache:
-#endif
 
 		ctx->pos++;
 	}
