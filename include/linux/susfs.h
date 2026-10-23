@@ -7,7 +7,6 @@
 #include <linux/hashtable.h>
 #include <linux/path.h>
 #include <linux/susfs_def.h>
-#include <linux/mount.h>
 
 #define SUSFS_VERSION "v2.0.0"
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
@@ -15,22 +14,6 @@
 #else
 #define SUSFS_VARIANT "GKI"
 #endif
-
-/* non shared to userspace ksu_susfs tool */
-#define SYSCALL_FAMILY_ALL_ENOENT 0
-#define SYSCALL_FAMILY_OPENAT 1
-#define SYSCALL_FAMILY_MKNOD 2
-#define SYSCALL_FAMILY_MKDIRAT 3
-#define SYSCALL_FAMILY_RMDIR 4
-#define SYSCALL_FAMILY_UNLINKAT 5
-#define SYSCALL_FAMILY_SYMLINKAT_NEWNAME 6
-#define SYSCALL_FAMILY_LINKAT_OLDNAME 7
-#define SYSCALL_FAMILY_LINKAT_NEWNAME 8
-#define SYSCALL_FAMILY_RENAMEAT2_OLDNAME 9
-#define SYSCALL_FAMILY_RENAMEAT2_NEWNAME 10
-#define SYSCALL_FAMILY_TRUNCATE 11
-#define SYSCALL_FAMILY_FACCESSAT 12
-#define SYSCALL_FAMILY_CHDIR 13
 
 /*********/
 /* MACRO */
@@ -50,21 +33,24 @@ struct st_susfs_sus_path {
 	int                                     err;
 };
 
-struct st_susfs_sus_mount {
-	char                    target_pathname[SUSFS_MAX_LEN_PATHNAME];
-};
-
 struct st_susfs_sus_path_list {
 	struct list_head                        list;
 	struct st_susfs_sus_path                info;
 	char                                    target_pathname[SUSFS_MAX_LEN_PATHNAME];
 	size_t                                  path_len;
 };
+
+struct st_external_dir {
+	char                                    target_pathname[SUSFS_MAX_LEN_PATHNAME];
+	bool                                    is_inited;
+	int                                     cmd;
+	int                                     err;
+};
 #endif
 
 /* sus_mount */
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-struct st_susfs_hide_sus_mnts_for_non_su_procs {
+struct st_susfs_hide_sus_mnts_for_all_procs {
 	bool                                    enabled;
 	int                                     err;
 };
@@ -106,56 +92,9 @@ struct st_susfs_try_umount {
 	int                                     err;
 };
 
-struct st_susfs_sus_proc_fd_link {
-	char                    target_link_name[SUSFS_MAX_LEN_PATHNAME];
-	char                    spoofed_link_name[SUSFS_MAX_LEN_PATHNAME];
-};
-
-struct st_susfs_sus_memfd {
-	char                    target_pathname[SUSFS_MAX_LEN_MFD_NAME];
-};
-
-struct st_susfs_mnt_id_recorder {
-	int                     target_mnt_id[SUSFS_MAX_SUS_MNTS];
-	int                     spoofed_mnt_id[SUSFS_MAX_SUS_MNTS];
-	int                     spoofed_parent_mnt_id[SUSFS_MAX_SUS_MNTS];
-	int                     count;
-};
-
-struct st_susfs_sus_mount_list {
-	struct list_head                        list;
-	struct st_susfs_sus_mount               info;
-};
-
-struct st_susfs_sus_kstat_list {
-	struct list_head                        list;
-	struct st_susfs_sus_kstat               info;
-};
-
-struct st_susfs_sus_maps_list {
-	struct list_head                        list;
-	struct st_susfs_sus_maps                info;
-};
-
 struct st_susfs_try_umount_list {
 	struct list_head                        list;
 	struct st_susfs_try_umount              info;
-};
-struct st_susfs_sus_proc_fd_link_list {
-	struct list_head                        list;
-	struct st_susfs_sus_proc_fd_link        info;
-};
-
-struct st_susfs_sus_memfd_list {
-	struct list_head                        list;
-	struct st_susfs_sus_memfd               info;
-};
-
-struct st_susfs_mnt_id_recorder_list {
-	struct list_head                        list;
-	int                                     pid;
-	int                                     opened_count;
-	struct st_susfs_mnt_id_recorder         info;
 };
 #endif
 
@@ -238,13 +177,14 @@ struct st_susfs_version {
 /***********************/
 /* sus_path */
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+void susfs_set_i_state_on_external_dir(void __user **user_info);
 void susfs_add_sus_path(void __user **user_info);
 void susfs_add_sus_path_loop(void __user **user_info);
 #endif
 
 /* sus_mount */
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-void susfs_set_hide_sus_mnts_for_non_su_procs(void __user **user_info);
+void susfs_set_hide_sus_mnts_for_all_procs(void __user **user_info);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 
 /* sus_kstat */
@@ -288,22 +228,11 @@ struct filename* susfs_get_redirected_path(unsigned long ino);
 void susfs_add_sus_map(void __user **user_info);
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
-int susfs_sus_path_by_path(struct path* file, int* errno_to_be_changed, int syscall_family);
-#else
-int susfs_sus_path_by_path(const struct path* file, int* errno_to_be_changed, int syscall_family);
-#endif
-
 void susfs_set_avc_log_spoofing(void __user **user_info);
-int susfs_sus_path_by_filename(struct filename* name, int* errno_to_be_changed, int syscall_family);
-int susfs_sus_ino_for_filldir64(unsigned long ino);
-void susfs_sus_kstat(unsigned long ino, struct stat* out_stat);
 
 void susfs_get_enabled_features(void __user **user_info);
 void susfs_show_variant(void __user **user_info);
 void susfs_show_version(void __user **user_info);
-
-void susfs_start_sdcard_monitor_fn(void);
 
 /* susfs_init */
 void susfs_init(void);
