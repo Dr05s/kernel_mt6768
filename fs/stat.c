@@ -18,16 +18,13 @@
 #include <linux/pagemap.h>
 #include <linux/compat.h>
 #ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
 #include <linux/susfs_def.h>
 #include <linux/version.h>
 #endif
 
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
-
-#ifdef CONFIG_KSU_SUSFS
-#include <linux/susfs.h>
-#endif
 
 #include "internal.h"
 #include "mount.h"
@@ -396,9 +393,6 @@ static int cp_new_stat(struct kstat *stat, struct stat __user *statbuf)
 #endif
 	tmp.st_blocks = stat->blocks;
 	tmp.st_blksize = stat->blksize;
-#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-	susfs_sus_kstat(tmp.st_ino, &tmp);
-#endif
 	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
 }
 
@@ -430,11 +424,6 @@ SYSCALL_DEFINE2(newlstat, const char __user *, filename,
 __attribute__((hot)) 
 extern int ksu_handle_stat(int *dfd, const char __user **filename_user,
 				int *flags);
-
-extern void ksu_handle_newfstat_ret(unsigned int *fd, struct stat __user **statbuf_ptr);
-#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
-extern void ksu_handle_fstat64_ret(unsigned long *fd, struct stat64 __user **statbuf_ptr); // optional
-#endif
 #endif
 
 #if !defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_SYS_NEWFSTATAT)
@@ -462,9 +451,6 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
 	if (!error)
 		error = cp_new_stat(&stat, statbuf);
 
-#ifdef CONFIG_KSU_MANUAL_HOOK
-	ksu_handle_newfstat_ret(&fd, &statbuf);
-#endif
 	return error;
 }
 #endif
