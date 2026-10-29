@@ -688,7 +688,7 @@ config TCP_CONG_BBR
 
 config TCP_CONG_BBR2
 	tristate "BBR2 TCP"
-	default n
+	default y
 	---help---
 
 	BBR2 TCP congestion control is a model-based congestion control
@@ -706,7 +706,7 @@ config TCP_CONG_BBR2
 
 choice
 	prompt "Default TCP congestion control"
-	default DEFAULT_BIC
+	default DEFAULT_BBR2
 	help
 	  Select the TCP congestion control that will be used by default
 	  for all connections.
