@@ -238,7 +238,7 @@ struct tcp_sock {
         u32        tlp_high_seq;        /* snd_nxt at the time of TLP */
 
         u32	tcp_tx_delay;	/* delay (in usec) added to TX packets */
-        u64	tcp_clock_cache; /* cache last tcp_clock_ns() (see tcp_mstamp_refresh()) *//
+        u64	tcp_clock_cache; /* cache last tcp_clock_ns() (see tcp_mstamp_refresh()) */
 
 /* RTT measurement */
         u64        tcp_mstamp;        /* most recent packet received/sent */
