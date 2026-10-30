@@ -692,7 +692,7 @@ static u32 bbr_tso_segs_generic(struct sock *sk, unsigned int mss_now,
 	u64 bytes;
 
 	/* Budget a TSO/GSO burst size allowance based on bw (pacing_rate). */
-	bytes = sk->sk_pacing_rate >> sk->sk_pacing_shift;
+	bytes = div_u64((u64)sk->sk_pacing_rate, 1000);
 
 	/* Budget a TSO/GSO burst size allowance based on min_rtt. For every
 	 * K = 2^tso_rtt_shift microseconds of min_rtt, halve the burst.
